@@ -18,53 +18,48 @@ import InfoTooltip from './InfoTooltip.js';
 
 function App() {
   const [cards, setCards] = React.useState([]);
-
-  React.useEffect(() => {
-    api
-      .getInitialCards()
-      .then((cardsData) => {
-        setCards(cardsData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
-
-  const [currentUser, setCurrentUser] = React.useState('');
-
-  // эффект при монтировании, который вызывает api.getUserInfo и обновляет стейт-переменную из полученного значения
-  React.useEffect(() => {
-    api
-      .getMyUserInfo()
-      .then((userData) => {
-        setCurrentUser(userData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
+  const [currentUser, setCurrentUser] = React.useState({});
 
   const [isEditAvatarPopupOpen, setIsEditAvatarPopupOpen] =
     React.useState(false);
+  const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] =
+    React.useState(false);
+  const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = React.useState(false);
+
+  const [selectedCard, setSelectedCard] = React.useState(null);
+
+  const navigate = useNavigate();
+
+  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [isSuccessful, setIsSuccessful] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState('');
+  const [isInfoPopupOpen, setIsInfoPopupOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (loggedIn) {
+      api
+        .getAllNeededData()
+        .then(([cardsData, userData]) => {
+          setCards(cardsData);
+          setCurrentUser(userData);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  }, [loggedIn]);
 
   function handleEditAvatarClick() {
     setIsEditAvatarPopupOpen(true);
   }
 
-  const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] =
-    React.useState(false);
-
   function handleEditProfileClick() {
     setIsEditProfilePopupOpen(true);
   }
 
-  const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = React.useState(false);
-
   function handleAddPlaceClick() {
     setIsAddPlacePopupOpen(true);
   }
-
-  const [selectedCard, setSelectedCard] = React.useState(null);
 
   function handleCardClick(card) {
     setSelectedCard(card);
@@ -145,13 +140,6 @@ function App() {
 
   // Блок авторизации и регистрации
 
-  const navigate = useNavigate();
-
-  const [loggedIn, setLoggedIn] = React.useState(false);
-  const [isSuccessful, setIsSuccessful] = React.useState(false);
-  const [userEmail, setUserEmail] = React.useState('');
-  const [isInfoPopupOpen, setIsInfoPopupOpen] = React.useState(false);
-
   function handleRegister(password, email) {
     auth
       .register(password, email)
@@ -172,6 +160,7 @@ function App() {
       .authorize(password, email)
       .then((res) => {
         setLoggedIn(true);
+        setUserEmail(email);
         localStorage.setItem('jwt', res.token);
         navigate('/');
       })
@@ -182,10 +171,16 @@ function App() {
       });
   }
 
+  function signOut() {
+    localStorage.removeItem('jwt');
+    setUserEmail('');
+    setLoggedIn(false);
+  }
+
   React.useEffect(() => {
     if (localStorage.jwt) {
       auth
-        .getContent(localStorage.jwt)
+        .checkToken(localStorage.jwt)
         .then((res) => {
           setUserEmail(res.data.email);
           setLoggedIn(true);
@@ -195,7 +190,7 @@ function App() {
           console.log(err);
         });
     }
-  }, [navigate]);
+  }, []);
 
   return (
     // «Внедряем» данные из currentUser с помощью провайдера контекста
@@ -206,7 +201,12 @@ function App() {
             path="/"
             element={
               <>
-                <Header userEmail={userEmail} />
+                <Header
+                  userEmail={userEmail}
+                  direction="/sign-in"
+                  text="Выйти"
+                  onSignOut={signOut}
+                />
                 <ProtectedRouteElement
                   element={Main}
                   loggedIn={loggedIn}
@@ -226,7 +226,7 @@ function App() {
             path="/sign-up"
             element={
               <>
-                <Header name="register" />
+                <Header direction="/sign-in" text="Войти" />
                 <Register onSubmit={handleRegister} />
               </>
             }
@@ -235,7 +235,7 @@ function App() {
             path="/sign-in"
             element={
               <>
-                <Header name="login" />
+                <Header direction="/sign-up" text="Регистрация" />
                 <Login onSubmit={handleLogin} />
               </>
             }

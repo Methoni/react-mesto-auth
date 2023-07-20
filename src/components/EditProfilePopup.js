@@ -6,8 +6,8 @@ function EditProfilePopup({ isOpen, onClose, onUpdateUser }) {
   // Подписка на контекст
   const currentUser = React.useContext(CurrentUserContext);
 
-  const [name, setName] = React.useState([]);
-  const [description, setDescription] = React.useState([]);
+  const [name, setName] = React.useState('');
+  const [description, setDescription] = React.useState('');
 
   function handleNameChange(event) {
     setName(event.target.value);

@@ -31,7 +31,7 @@ class Auth {
     }).then((res) => this._getResponseData(res));
   }
 
-  getContent(token) {
+  checkToken(token) {
     return fetch(`${this._baseUrl}/users/me`, {
       method: 'GET',
       headers: {
